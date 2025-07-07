@@ -2,6 +2,7 @@ import json
 import requests
 import pandas as pd
 from urllib.parse import unquote
+import matplotlib.pyplot as plt
 
 # Initialize session
 session = requests.Session()
@@ -61,7 +62,7 @@ def hit_apis(url, api_headers, laravel_token):
         market_data = []
         for item in data:
             market_data.append({
-                'Contract_Name': item['contractName'],
+                'Contract Name': item['contractName'],
                 'Last': item['lastPrice'],
                 'Change': item['priceChange'],
                 'High': item['highPrice'],
@@ -71,7 +72,47 @@ def hit_apis(url, api_headers, laravel_token):
             })
 
         df = pd.DataFrame(market_data)
+        # a)Create a new column named “Mean” that which will be the mean of column “High” and “Low”.
+        df["Low"] = df["Low"].replace(",", "", regex=True).replace("-", ".", regex=True).astype(float)
+        df["High"] = df["High"].replace(",", "", regex=True).replace("-", ".", regex=True).astype(float)
+        df['Mean'] = (df['High'] + df['Low']) / 2
         print(df.to_string())
+
+        # b) Plot “High”, “Low” and “Mean” in a single linear graph.
+        plt.figure(figsize=(12, 6))
+        plt.plot(df.index, df['High'], label='High', marker='o')
+        plt.plot(df.index, df['Low'], label='Low', marker='o')
+        plt.plot(df.index, df['Mean'], label='Mean', marker='o')
+        # Customize the plot
+        plt.xlabel('Contract Index')
+        plt.ylabel('Price')
+        plt.title('High, Low, and Mean Prices of Futures Contracts')
+        plt.legend()
+        plt.grid(True)
+        # Set x-ticks to show contract names (rotated for readability)
+        plt.xticks(df.index, df['Contract Name'], rotation=45, ha='right')
+        plt.tight_layout()
+        plt.show()
+
+        # c) Find the “Contract Name” and “Last” of the row that has largest “Change”
+        df['Change'] = pd.to_numeric(df['Change'].str.replace('%', ''), errors='coerce')
+        max_changes = df['Change'].idxmax()  # max
+        print(f"\nContract with largest change: {df.loc[max_changes, 'Contract Name']}")
+        print(f"Last price: {df.loc[max_changes, 'Last']}")
+        print(f"Largest change: {df.loc[max_changes, 'Change']}%")
+
+        # ---------------------------------------------------------------------------------------------------------------
+        min_changes = df['Change'].idxmin()  # min
+        print(f"\nContract with smallest change: {df.loc[min_changes, 'Contract Name']}")
+        print(f"Last price: {df.loc[min_changes, 'Last']}")
+        print(f"smallest change: {df.loc[min_changes, 'Change']}%")
+
+        # d) The extracted data needs to be saved with the sheet name as “Raw Data” in an Excel workbook.
+        save_file_path = r"P:\Python_code\Matplotlib\files\futures_data.xlsx"
+        df.to_excel(save_file_path, sheet_name="Raw Data", index=False)
+        print("Data saved to 'futures_data.xlsx' under sheet 'Raw Data'")
+
+
     else:
         print(f"API request failed with status code: {response.status_code}")
         print(response.text)
