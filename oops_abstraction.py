@@ -1,3 +1,8 @@
+
+"""
+Abstraction is one of the fundamental principles of Object-Oriented Programming (OOP).
+It refers to hiding the internal implementation details and showing only the essential features of an object.
+"""
 from abc import ABC, abstractmethod
 
 
