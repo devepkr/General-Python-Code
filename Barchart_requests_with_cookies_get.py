@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 session = requests.Session()
 
 def hit_home_page():
-    headers = {
+    headers_ = {
         'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
         'accept-language': 'en-US,en;q=0.9',
         'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Brave";v="138"',
@@ -22,19 +22,20 @@ def hit_home_page():
     }
 
     initial_url = 'https://www.barchart.com/futures'
-    response = session.get(initial_url, headers=headers)
+    response_ = session.get(initial_url, headers=headers_)
+    print(response_.status_code)
 
     # Extract cookies
     cookies = session.cookies.get_dict()
-    laravel_token = cookies.get('laravel_token')
-    xsrf_token = cookies.get('XSRF-TOKEN')
-    if not laravel_token or not xsrf_token:
+    laravel_token_1 = cookies.get('laravel_token')
+    xsrf_token_1 = cookies.get('XSRF-TOKEN')
+    if not laravel_token_1 or not xsrf_token_1:
         raise ValueError("Failed to retrieve laravel_token or XSRF-TOKEN from cookies")
 
-    xsrf_token = unquote(xsrf_token)
-    return xsrf_token, laravel_token
+    xsrf_token_2 = unquote(xsrf_token_1)
+    return xsrf_token_2, laravel_token_1
 
-def api_headers(xsrf_token):
+def api_headers(xsrf_token_2):
     return {
         'accept': 'application/json',
         'accept-language': 'en-US,en;q=0.9',
@@ -48,11 +49,11 @@ def api_headers(xsrf_token):
         'sec-fetch-site': 'same-origin',
         'sec-gpc': '1',
         'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36',
-        'x-xsrf-token': xsrf_token,
+        'x-xsrf-token': xsrf_token_2,
     }
 
-def hit_apis(url, api_headers, laravel_token):
-    response = session.get(url, cookies={'laravel_token': laravel_token}, headers=api_headers)
+def hit_apis(URL, api_headers_, laravel_token_1):
+    response = session.get(URL, cookies={'laravel_token': laravel_token_1}, headers=api_headers_)
 
     # Process the response
     if response.status_code == 200:
