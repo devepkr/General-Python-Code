@@ -22,6 +22,7 @@ def hit_home_page():
     }
 
     initial_url = 'https://www.barchart.com/futures'
+    print(initial_url)
     response_ = session.get(initial_url, headers=headers_)
     print(response_.status_code)
 
@@ -33,6 +34,7 @@ def hit_home_page():
         raise ValueError("Failed to retrieve laravel_token or XSRF-TOKEN from cookies")
 
     xsrf_token_2 = unquote(xsrf_token_1)
+    # print('xsrf_token_2 >>>>', xsrf_token_2)
     return xsrf_token_2, laravel_token_1
 
 def api_headers(xsrf_token_2):
@@ -54,8 +56,6 @@ def api_headers(xsrf_token_2):
 
 def hit_apis(URL, api_headers_, laravel_token_1):
     response = session.get(URL, cookies={'laravel_token': laravel_token_1}, headers=api_headers_)
-
-    # Process the response
     if response.status_code == 200:
         json_data = json.loads(response.content)
         data = json_data['data']
