@@ -3,6 +3,7 @@ import random
 import  pandas as pd
 import asyncio
 from playwright.async_api import async_playwright
+from fake_useragent import UserAgent
 import requests
 from bs4 import BeautifulSoup
 session = requests.Session()

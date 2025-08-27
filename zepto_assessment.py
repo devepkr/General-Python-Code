@@ -57,6 +57,7 @@ class ZeptoData:
             'sec-fetch-site': 'same-origin',
             'sec-fetch-user': '?1',
             'upgrade-insecure-requests': '1',
+
         }
 
     def get_response(self):
@@ -65,8 +66,8 @@ class ZeptoData:
         logger.info(f"Randomly Selected User-Agent: {selected_user_agent}")
 
         try:
-            ress = requests.get(self.url, headers=headers, timeout=10)
-            soups = BeautifulSoup(ress.content, 'lxml')
+            res = requests.get(self.url, headers=headers, timeout=10)
+            soups = BeautifulSoup(res.content, 'lxml')
             return soups
         except requests.exceptions.RequestException as e:
             logger.error(f"Failed to fetch {self.url}: {e}")
