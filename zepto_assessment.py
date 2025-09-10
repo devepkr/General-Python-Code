@@ -1,19 +1,24 @@
-import requests
-from bs4 import BeautifulSoup
-import random
-import pandas as pd
 import os
+import time
+import random
 import logging
+import requests
+import pandas as pd
+from bs4 import BeautifulSoup
+
+
+
+
 
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[logging.FileHandler('zepto_scraper.log'), logging.StreamHandler()]
+    handlers=[logging.FileHandler('run.log'), logging.StreamHandler()]
 )
 logger = logging.getLogger(__name__)
 
 
-product_data = []
+collect_product_data = []
 
 class ZeptoData:
     def __init__(self, URL):
@@ -63,56 +68,65 @@ class ZeptoData:
     def get_response(self):
         selected_user_agent = random.choice(self.user_agent_list)
         headers = {**self.header, **selected_user_agent}
-        logger.info(f"Randomly Selected User-Agent: {selected_user_agent}")
+        logger.info(f"Fetching URL: {self.url}")
+        logger.info(f"Using headers: {headers}")
+        sess = requests.session()
 
         try:
-            res = requests.get(self.url, headers=headers, timeout=10)
-            soups = BeautifulSoup(res.content, 'lxml')
-            return soups
+            res = sess.get(self.url, headers=headers, timeout=10)
+            soup = BeautifulSoup(res.content, 'lxml')
+            return soup
         except requests.exceptions.RequestException as e:
             logger.error(f"Failed to fetch {self.url}: {e}")
             return None
 
-    def extract_data(self, soups):
-        print(f"URL: {self.url}")
+    def extract_data(self):
+        pk = self.get_response()
+        if not pk:
+            logger.warning(f"Skipping URL due to failed request: {self.url}")
+            return
+
 
         title = ''
         try:
-            title = soups.select_one('[class="rounded-2xl"] h1').text.strip()
+            title = pk.select_one('[class="rounded-2xl"] h1').text.strip()
             print(f"Title: {title}")
         except (AttributeError, TypeError) as e:
             logger.error(f"Error extracting title for {self.url}: {e}")
 
         price = ''
         try:
-            price = soups.select_one('p[class="flex items-center justify-center gap-2"]').text.strip().replace('₹', '')
+            price = pk.select_one('p[class="flex items-center justify-center gap-2"]').text.strip().replace('₹', '')
             print(f"Price: {price}")
         except (AttributeError, TypeError) as e:
             logger.error(f"Error extracting price for {self.url}: {e}")
 
         sell_price = ''
         try:
-            sell_price = soups.select_one('[class="rounded-2xl"] [class="line-through font-bold"]').text.strip().replace('₹', '')
+            sell_price = pk.select_one('[class="rounded-2xl"] [class="line-through font-bold"]').text.strip().replace('₹', '')
             print(f"Sell Price: {sell_price}")
         except (AttributeError, TypeError) as e:
             logger.error(f"Error extracting sell price for {self.url}: {e}")
 
         specs = ''
         try:
-            attr_name = [name.text.strip() for name in soups.select('[id="productHighlights"] h3')]
-            attr_value = [value.text.strip() for value in soups.select('[id="productHighlights"] p')]
+            attr_name = [name.text.strip() for name in pk.select('[id="productHighlights"] h3')]
+            attr_value = [value.text.strip() for value in pk.select('[id="productHighlights"] p')]
             specs = [{name_li: values_li} for name_li, values_li in zip(attr_name, attr_value)]
             print(f"Specs: {specs}")
         except (AttributeError, TypeError) as e:
             logger.error(f"Error extracting specs for {self.url}: {e}")
 
-        product_data.append({
+        product = {
             'URL' : self.url,
             'Title': title,
             'Price': price,
             'Sell_price': sell_price,
             'Specs': specs
-        })
+        }
+        logger.info(f"Extracted: {product}")
+        collect_product_data.append(product)
+
 
 if __name__ == "__main__":
     logger.info("Starting Zepto web scraping")
@@ -125,15 +139,20 @@ if __name__ == "__main__":
         'https://www.zeptonow.com/pn/borges-extra-light-olive-oil/pvid/e143005a-dabf-4655-ace5-2977d241032a',
     ]
     i = 0
-    for idx, url in enumerate(url_list[i:], start=i):
+    for idx, url in enumerate(url_list[i:1], start=i):
         zepto = ZeptoData(url)
-        soup = zepto.get_response()
-        zepto.extract_data(soup)
+        zepto.extract_data()
+        time.sleep(random.uniform(1.5, 3.5))
 
-    df = pd.DataFrame(product_data)
-    if os.path.exists('zepto.csv'):
-        df.to_csv('zepto.csv', mode='a', index=False, header=False)
+    # === Save to CSV ===
+    df = pd.DataFrame(collect_product_data)
+    file_name = 'zepto.csv'
+
+    if os.path.exists(file_name):
+        df.to_csv(file_name, mode='a', index=False, header=False)
+        logger.info(f"Appended {len(df)} records to existing {file_name}")
     else:
-        logger.info("Creating new zepto.csv")
-        df.to_csv('zepto.csv', mode='w', index=False)
-    logger.info(f"Saved {len(product_data)} records to zepto.csv")
+        df.to_csv(file_name, mode='w', index=False)
+        logger.info(f"Created {file_name} with {len(df)} records")
+
+    logger.info("Scraping complete.")
