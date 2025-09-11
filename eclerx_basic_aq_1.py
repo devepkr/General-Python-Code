@@ -21,7 +21,7 @@ while True:
     quotes = soup.select('div[class="quote"]')
     for item in quotes:
         quote = item.select_one('[itemprop="text"]').text
-        author = item.select_one('[itemprop="author"]').text.strip()
+        author = item.select_one('[itemprop="author"]').text
         tag_elements = item.select('div.tags a.tag')
         tags = ', '.join([tag.text for tag in tag_elements])
 
